@@ -8,30 +8,6 @@ import (
 
 // FIXME: use strict slashes
 
-// Middleware is a function which consumes a ContextHandlerFunc producing a
-// new ContextHandlerFunc
-type Middleware func(ContextHandlerFunc) ContextHandlerFunc
-
-func composeMiddlewarePair(mw1, mw2 Middleware) Middleware {
-	return func(h ContextHandlerFunc) ContextHandlerFunc {
-		return mw1(mw2(h))
-	}
-}
-
-func composeMiddleware(mws ...Middleware) Middleware {
-	var mwc Middleware
-	for _, mw := range mws {
-		if mwc == nil {
-			mwc = mw
-			continue
-		}
-
-		mwc = composeMiddlewarePair(mw, mwc)
-	}
-
-	return mwc
-}
-
 // Route wraps Gorilla Route
 type Route struct {
 	f  *Framework

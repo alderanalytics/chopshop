@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alderanalytics/snitch"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/context"
 	"github.com/twinj/uuid"
@@ -33,7 +34,7 @@ type Framework struct {
 	SessionSecret    []byte
 	IssuerName       string
 	SessionDuration  time.Duration
-	ErrorReporter    ErrorReporter
+	ErrorReporter    snitch.ErrorReporter
 	CookieDomain     string
 	jwtCookieName    string
 	xsrfCookieName   string
@@ -49,7 +50,7 @@ func (f *Framework) PanicMonitor(repanic bool) {
 			return
 		}
 
-		ectx := ErrorContext{
+		ectx := snitch.ErrorContext{
 			Error: fmt.Sprintf("panic: %s", err),
 		}
 
@@ -63,7 +64,7 @@ func (f *Framework) PanicMonitor(repanic bool) {
 
 // Notify invokes the attached error reporting service, if any,
 // provided that the ErrorContext pointer is not nil
-func (f *Framework) Notify(ectx *ErrorContext) {
+func (f *Framework) Notify(ectx *snitch.ErrorContext) {
 	if f.ErrorReporter != nil && ectx != nil {
 		f.ErrorReporter.Notify(ectx)
 	}
@@ -117,7 +118,7 @@ func (f *Framework) ReadToken(r *http.Request) (*jwt.Token, error) {
 // but before the response is sent.
 func (f *Framework) BeforeResponse(ctx *RequestContext) {
 	if ctx.destroyingSession {
-		f.DestroySession(ctx.w)
+		f.DestroySession(ctx.ResponseWriter)
 		return
 	}
 
@@ -127,10 +128,10 @@ func (f *Framework) BeforeResponse(ctx *RequestContext) {
 			"rights": ctx.principal.Rights,
 		})
 	} else {
-		f.DeleteCookie(ctx.w, f.userCookieName)
+		f.DeleteCookie(ctx.ResponseWriter, f.userCookieName)
 	}
 
-	f.SendToken(ctx.w, ctx.token)
+	f.SendToken(ctx.ResponseWriter, ctx.token)
 	ctx.SetCookie(f.xsrfCookieName, ctx.XSRFToken(), false)
 }
 
@@ -224,12 +225,12 @@ func (f *Framework) CreateRequestContext(w http.ResponseWriter, r *http.Request)
 	}
 
 	return &RequestContext{
-		w:           w,
-		r:           r,
-		token:       token,
-		principal:   principal,
-		framework:   f,
-		requestTime: time.Now(),
+		ResponseWriter: w,
+		Request:        r,
+		token:          token,
+		principal:      principal,
+		framework:      f,
+		requestTime:    time.Now(),
 	}, nil
 }
 
@@ -274,7 +275,7 @@ func (f *Framework) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (f *Framework) ServeContext(ctx *RequestContext, fn ContextHandlerFunc) {
 	response := fn(ctx)
 	f.BeforeResponse(ctx)
-	response.ServeHTTP(ctx.w, ctx.r)
+	response.ServeHTTP(ctx.ResponseWriter, ctx.Request)
 }
 
 func hasItem(item string, list []string) bool {

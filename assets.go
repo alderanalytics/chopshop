@@ -55,7 +55,7 @@ func (r *AssetResolver) Resolve(path string) Response {
 // request, BlankResponse(404) is returned.
 func AssetResolverResponse(a *AssetResolver) ContextHandlerFunc {
 	return func(ctx *RequestContext) Response {
-		path := ctx.r.URL.Path
+		path := ctx.Request.URL.Path
 		if !strings.HasPrefix(path, "/") {
 			path = "/" + path
 		}

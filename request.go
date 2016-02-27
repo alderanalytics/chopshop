@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alderanalytics/snitch"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/serenize/snaker"
@@ -25,8 +26,8 @@ type ContextHandlerFunc func(*RequestContext) Response
 // RequestContext is a utility struct containing useful information about
 // the request.
 type RequestContext struct {
-	w                 http.ResponseWriter
-	r                 *http.Request
+	ResponseWriter    http.ResponseWriter
+	Request           *http.Request
 	token             *jwt.Token
 	principal         *Principal
 	framework         *Framework
@@ -108,7 +109,7 @@ func (ctx *RequestContext) HasRight(right string) bool {
 // empty string.
 func (ctx *RequestContext) RouteVar(k string) string {
 	if ctx.routeVars == nil {
-		ctx.routeVars = mux.Vars(ctx.r)
+		ctx.routeVars = mux.Vars(ctx.Request)
 	}
 
 	if v, ok := ctx.routeVars[k]; ok {
@@ -158,7 +159,7 @@ func (ctx *RequestContext) UserID() uint64 {
 // not present.
 func (ctx *RequestContext) QueryVar(v string) string {
 	if ctx.queryValues == nil {
-		ctx.queryValues = ctx.r.URL.Query()
+		ctx.queryValues = ctx.Request.URL.Query()
 	}
 
 	return ctx.queryValues.Get(v)
@@ -216,7 +217,7 @@ func (ctx *RequestContext) SessionID() string {
 
 // ReadJSONUnsafe deserializes a JSON encoded request body.
 func (ctx *RequestContext) ReadJSONUnsafe(v interface{}) error {
-	return json.NewDecoder(ctx.r.Body).Decode(v)
+	return json.NewDecoder(ctx.Request.Body).Decode(v)
 }
 
 // This is wrong but works well enough for our app.
@@ -372,16 +373,16 @@ func (ctx *RequestContext) CustomErrorMessage(err error, friendly string) string
 	return err.Error()
 }
 
-func (ctx *RequestContext) errorMakeErrorContext(err error, status int, ectx *ErrorContext) {
+func (ctx *RequestContext) errorMakeErrorContext(err error, status int, ectx *snitch.ErrorContext) {
 	ectx.Error = fmt.Sprintf("Server Error: %s", err)
-	ectx.Details = make(ErrorDetails)
+	ectx.Details = snitch.NewErrorDetails()
 	ectx.Details["status"] = status
 	ectx.Details["session_id"] = ctx.SessionID()
 	ectx.Details["user_id"] = ctx.UserID()
 	ectx.Details["username"] = ctx.Username()
 	ectx.Details["is_authenticated"] = ctx.IsAuthenticated()
-	ectx.Details["url"] = ctx.r.URL.String()
-	ectx.Details["host"] = ctx.r.Host
+	ectx.Details["url"] = ctx.Request.URL.String()
+	ectx.Details["host"] = ctx.Request.Host
 }
 
 // BlankErrorResponse logs an error and returns a blank response
@@ -411,7 +412,7 @@ func (ctx *RequestContext) CustomErrorResponse(err error, friendly string, statu
 
 // NotifyError
 func (ctx *RequestContext) NotifyError(err error, status int) {
-	var ectx ErrorContext
+	var ectx snitch.ErrorContext
 	ctx.errorMakeErrorContext(err, status, &ectx)
 	ctx.framework.Notify(&ectx)
 }
@@ -440,7 +441,7 @@ func (ctx *RequestContext) SetBase64JSONCookie(name string, value interface{}) e
 
 // SetCookie creates a cookie.
 func (ctx *RequestContext) SetCookie(name, value string, httpOnly bool) {
-	http.SetCookie(ctx.w, &http.Cookie{
+	http.SetCookie(ctx.ResponseWriter, &http.Cookie{
 		Name:     name,
 		Domain:   ctx.framework.CookieDomain,
 		Value:    value,
@@ -453,7 +454,7 @@ func (ctx *RequestContext) SetCookie(name, value string, httpOnly bool) {
 
 // DeleteCookie deletes a cookie on the request object.
 func (ctx *RequestContext) DeleteCookie(name string) {
-	ctx.framework.DeleteCookie(ctx.w, name)
+	ctx.framework.DeleteCookie(ctx.ResponseWriter, name)
 }
 
 // DestroySession instructs the client to delete all framework cookies

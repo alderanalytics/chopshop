@@ -397,10 +397,10 @@ func (ctx *RequestContext) BlankErrorResponse(err error, status int) Response {
 // ErrorResponse returns an error response containing the message from
 // ErrorMessage.
 func (ctx *RequestContext) ErrorResponse(err error, status int) Response {
-	return ctx.CustomErrorResponse(err, ctx.framework.defaultErrorText, status)
+	return ctx.CustomErrorResponse(err, ctx.framework.DefaultErrorText, status)
 }
 
-// CustomErrorResponse returns an error resposne to the user with a custom
+// CustomErrorResponse returns an error response to the user with a custom
 // message.
 func (ctx *RequestContext) CustomErrorResponse(err error, friendly string, status int) Response {
 	if status >= 500 {
@@ -422,7 +422,7 @@ func (ctx *RequestContext) TemplateResponse(template *template.Template, templat
 	return func(w http.ResponseWriter, r *http.Request) {
 		if err := template.ExecuteTemplate(w, templateName, data); err != nil {
 			ctx.NotifyError(err, http.StatusInternalServerError)
-			http.Error(w, ctx.CustomErrorMessage(err, ctx.framework.defaultErrorText), http.StatusInternalServerError)
+			http.Error(w, ctx.CustomErrorMessage(err, ctx.framework.DefaultErrorText), http.StatusInternalServerError)
 		}
 	}
 }

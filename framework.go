@@ -39,7 +39,7 @@ type Framework struct {
 	jwtCookieName    string
 	xsrfCookieName   string
 	userCookieName   string
-	defaultErrorText string
+	DefaultErrorText string
 	*Router
 }
 
@@ -83,7 +83,7 @@ func NewFramework(issuer string, cookieDomain string) (*Framework, error) {
 		jwtCookieName:    fmt.Sprintf("_%s_token", issuer),
 		xsrfCookieName:   fmt.Sprintf("_%s_xsrf", issuer),
 		userCookieName:   fmt.Sprintf("_%s_user", issuer),
-		defaultErrorText: "An error has occurred. Please try the app again later.",
+		DefaultErrorText: "An unexpected error has occurred.",
 	}
 
 	f.Router = newRouter(f)
@@ -260,7 +260,7 @@ func (f *Framework) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx, err := f.CreateRequestContext(w, r)
 	if err != nil {
 		f.DestroySession(w)
-		ErrorResponse(f.defaultErrorText, http.StatusBadRequest).ServeHTTP(w, r)
+		ErrorResponse(f.DefaultErrorText, http.StatusBadRequest).ServeHTTP(w, r)
 		return
 	}
 

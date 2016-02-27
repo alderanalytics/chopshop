@@ -1,6 +1,4 @@
-package framework
-
-// FIXME: ENFORCE XSRF PROTECTION!
+package chopshop
 
 import (
 	"encoding/json"

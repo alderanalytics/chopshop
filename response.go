@@ -1,4 +1,4 @@
-package framework
+package chopshop
 
 import (
 	"encoding/json"

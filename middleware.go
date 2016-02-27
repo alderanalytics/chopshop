@@ -2,8 +2,6 @@ package chopshop
 
 import (
 	"net/http"
-
-	"github.com/alderanalytics/chopshop"
 )
 
 // Middleware is a function which consumes a ContextHandlerFunc producing a

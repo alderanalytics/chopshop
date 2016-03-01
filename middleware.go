@@ -22,7 +22,7 @@ func composeMiddleware(mws ...Middleware) Middleware {
 			continue
 		}
 
-		mwc = composeMiddlewarePair(mw, mwc)
+		mwc = composeMiddlewarePair(mwc, mw)
 	}
 
 	return mwc

@@ -15,7 +15,7 @@ type Route struct {
 	mw Middleware
 }
 
-func wrapRoute(r *mux.Route, f *Framework, mw Middleware) *Route {
+func newRoute(r *mux.Route, f *Framework, mw Middleware) *Route {
 	return &Route{f: f, r: r, mw: mw}
 }
 
@@ -37,11 +37,12 @@ func (r *Route) Response(response Response) {
 
 // Handler mounts a ContextHandlerFunc at the specified endpoint.
 func (r *Route) Handler(fn ContextHandlerFunc) {
+	if r.mw != nil {
+		fn = r.mw(fn)
+	}
+
 	r.unsafeHandler(http.HandlerFunc(
 		func(w http.ResponseWriter, req *http.Request) {
-			if r.mw != nil {
-				fn = r.mw(fn)
-			}
 			r.f.ServeContext(r.f.ContextFor(req), fn)
 		}))
 }
@@ -56,9 +57,9 @@ func (r *Route) Methods(methods ...string) *Route {
 	return r
 }
 
-// Middleware applies a middleware handler to the specified route.
+// Middleware appends a middleware handler to the specified route.
 func (r *Route) Middleware(mws ...Middleware) *Route {
-	r.mw = composeMiddleware(mws...)
+	r.mw = extendMiddleware(r.mw, mws...)
 	return r
 }
 
@@ -79,17 +80,17 @@ func wrapRouter(r *mux.Router, f *Framework, mw Middleware) *Router {
 
 // PathPrefix returns a route relative to the specified prefix.
 func (r *Router) PathPrefix(tpl string) *Route {
-	return wrapRoute(r.r.PathPrefix(tpl), r.f, r.mw)
+	return newRoute(r.r.PathPrefix(tpl), r.f, r.mw)
 }
 
 // Path returns a route for the specified prefix.
 func (r *Router) Path(path string) *Route {
-	return wrapRoute(r.r.Path(path), r.f, r.mw)
+	return newRoute(r.r.Path(path), r.f, r.mw)
 }
 
-// Middleware adds middleware to the router to be applied on all endpoints.
+// Middleware appends middleware to the router to be applied on all endpoints.
 func (r *Router) Middleware(mws ...Middleware) *Router {
-	r.mw = composeMiddleware(mws...)
+	r.mw = extendMiddleware(r.mw, mws...)
 	return r
 }
 

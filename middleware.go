@@ -17,6 +17,10 @@ func composeMiddlewarePair(mw1, mw2 Middleware) Middleware {
 func composeMiddleware(mws ...Middleware) Middleware {
 	var mwc Middleware
 	for _, mw := range mws {
+		if mw == nil {
+			continue
+		}
+
 		if mwc == nil {
 			mwc = mw
 			continue
@@ -26,6 +30,10 @@ func composeMiddleware(mws ...Middleware) Middleware {
 	}
 
 	return mwc
+}
+
+func extendMiddleware(mw Middleware, mws ...Middleware) Middleware {
+	return composeMiddleware(append([]Middleware{mw}, mws...)...)
 }
 
 // XSRFMiddleware returns EmptyJSONResponse(401) unless the X-XSRF-Token header

@@ -220,17 +220,24 @@ func (ctx *RequestContext) ReadJSONUnsafe(v interface{}) error {
 	return json.NewDecoder(ctx.Request.Body).Decode(v)
 }
 
+func unmarshalerFor(rv reflect.Value) reflect.Type {
+	ty := rv.Type()
+	for _, umType := range unmarshalerTypes {
+		if ty.Implements(umType) || reflect.PtrTo(ty).Implements(umType) {
+			return umType
+		}
+	}
+
+	return nil
+}
+
 // This is wrong but works well enough for our app.
 func isRecursibleType(rv reflect.Value) bool {
 	ty := rv.Type()
 	if ty.Kind() == reflect.Struct {
-		for _, umType := range unmarshalerTypes {
-			if ty.Implements(umType) || reflect.PtrTo(ty).Implements(umType) {
-				return false
-			}
-		}
-		return true
+		return unmarshalerFor(rv) == nil
 	}
+
 	return false
 }
 
@@ -314,6 +321,10 @@ func (ctx *RequestContext) safeSerializeSlice(src reflect.Value) (interface{}, e
 // safeSerialize recursively converts a struct into a map[string]interface{}
 // omitting fields for which the current context lacks the "read" right.
 func (ctx *RequestContext) safeSerialize(src reflect.Value) (ifc interface{}, err error) {
+	if unmarshaler := unmarshalerFor(src); unmarshaler != nil {
+		return src.Interface(), nil
+	}
+
 	switch src.Type().Kind() {
 	case reflect.Slice:
 		ifc, err = ctx.safeSerializeSlice(src)

@@ -378,7 +378,7 @@ func (ctx *RequestContext) MakeJSONResponse(v interface{}) (Response, error) {
 // given error. This function acts as a hook allowing the framework to control
 // what response the user may see.
 func (ctx *RequestContext) CustomErrorMessage(err error, friendly string) string {
-	if err == nil || !ctx.HasRight("seeErrors") {
+	if err == nil || !ctx.HasRight(ctx.framework.RightRevealError) {
 		return friendly
 	}
 	return err.Error()

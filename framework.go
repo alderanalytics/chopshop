@@ -40,6 +40,7 @@ type Framework struct {
 	xsrfCookieName   string
 	userCookieName   string
 	DefaultErrorText string
+	RightRevealError string
 	*Router
 }
 
@@ -83,6 +84,7 @@ func NewFramework(issuer string, cookieDomain string) (*Framework, error) {
 		jwtCookieName:    fmt.Sprintf("_%s_token", issuer),
 		xsrfCookieName:   fmt.Sprintf("_%s_xsrf", issuer),
 		userCookieName:   fmt.Sprintf("_%s_user", issuer),
+		RightRevealError: "RevealError",
 		DefaultErrorText: "An unexpected error has occurred.",
 	}
 
